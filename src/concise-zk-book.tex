@@ -1,0 +1,66 @@
+%%% Header
+
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[hidelinks]{hyperref}
+
+\usepackage{amsmath,amsthm,amssymb}
+\usepackage{mathtools}
+\usepackage{tikz}
+
+%%% Definitions
+
+%% Additional Theorem environment definitions
+\theoremstyle{plain}
+\newcounter{documentcounter}
+\newtheorem{theorem}[documentcounter]{Theorem}
+\newtheorem{proposition}[documentcounter]{Proposition}
+\newtheorem{corollary}[documentcounter]{Corollary}
+\newtheorem{lemma}[documentcounter]{Lemma}
+\newtheorem{innercustomthm}{Theorem}
+\newenvironment{customthm}[1]
+  {\renewcommand\theinnercustomthm{#1}\innercustomthm}
+  {\endinnercustomthm}
+
+\theoremstyle{definition}
+\newtheorem{definition}[documentcounter]{Definition}
+\newtheorem*{definition*}{Definition}
+\newtheorem{example}[documentcounter]{Example}
+\newtheorem{problem}[documentcounter]{Problem}
+
+%% Formatting
+\newcommand{\defn}[1]{\textbf{#1}}
+
+%% General Mathematics
+\newcommand{\script}[1]{\mathcal{#1}}         % calligraphic math font
+\newcommand{\defeq}{\coloneqq}                % definition equality ":="
+\newcommand{\set}[2]{\left\{{#1}\,:\,{#2}\right\}} % set builder notation
+\newcommand{\card}[1]{\left|#1\right|}        % cardinality
+\newcommand{\ncard}[1]{\#{#1}}
+\newcommand{\union}{\cup}                     % small union
+\newcommand{\intersect}{\cap}                 % small intersection
+\newcommand{\Union}{\bigcup}                  % large union
+\newcommand{\Intersect}{\bigcap}              % large intersection
+\newcommand{\ZZ}{\mathbb{Z}}                  % integers
+\newcommand{\RR}{\mathbb{R}}                  % real numbers
+
+
+
+
+%%% Document
+
+\begin{document}
+
+\title{Concise Zero Knowledge: \\ Algorithms and Protocols}
+
+\author{Bryan R.\ Gillespie\footnote{Email: \href{mailto:Bryan.Gillespie@colostate.edu}{\texttt{Bryan.Gillespie@colostate.edu}}}\\[1ex] Department of Mathematics\\ Colorado State University\\ Fort Collins, CO, U.S.A.}
+
+\date{\today}
+
+\maketitle
+
+
+
+
+
+\end{document}
