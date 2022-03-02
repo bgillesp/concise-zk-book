@@ -6,6 +6,7 @@
 
 \usepackage{amsmath,amsthm,amssymb}
 \usepackage{mathtools}
+\usepackage{xcolor}
 \usepackage{tikz}
 
 %%% Definitions
@@ -27,6 +28,7 @@
 \newtheorem*{definition*}{Definition}
 \newtheorem{example}[documentcounter]{Example}
 \newtheorem{problem}[documentcounter]{Problem}
+\newtheorem{remark}[documentcounter]{Remark}
 
 %% Formatting
 \newcommand{\defn}[1]{\textbf{#1}}
@@ -41,10 +43,46 @@
 \newcommand{\intersect}{\cap}                 % small intersection
 \newcommand{\Union}{\bigcup}                  % large union
 \newcommand{\Intersect}{\bigcap}              % large intersection
+\newcommand{\NN}{\mathbb{N}}                  % natural numbers
 \newcommand{\ZZ}{\mathbb{Z}}                  % integers
 \newcommand{\RR}{\mathbb{R}}                  % real numbers
+\newcommand{\FF}{\mathbb{F}}                  % general field
+
+\DeclareMathOperator{\ML}{ML}                 % multilinear polynomials
+\newcommand{\matr}[1]{{\begin{pmatrix*}[r] #1 \end{pmatrix*}}} % inline matrix
+\newcommand{\concat}{\mathbin{\Vert}}         % concatenate tuple
 
 
+
+%% Algorithms
+\usepackage[ruled]{algorithm}
+\usepackage{algorithmicx}
+\usepackage[noend]{algpseudocode}
+
+\newcommand*{\Let}[2]{\State {#1} $\gets$ {#2}}
+\newcommand*{\Declare}[1]{\State {#1}}
+\definecolor{alglinenumber}{rgb}{0.7, 0.7, 0.7}
+\algrenewcommand\alglinenumber[1]{
+    {\footnotesize\color{alglinenumber}\texttt{#1}}}
+\algrenewcommand\algorithmicrequire{\textbf{Precondition:}}
+\algrenewcommand\algorithmicensure{\textbf{Postcondition:}}
+
+% \usepackage{caption}
+% \DeclareCaptionLabelFormat{algnonumber}{Algorithm}
+% \captionsetup[algorithm]{labelformat=algnonumber}
+
+\newcommand*{\Where}[2]{\State {#1} : {#2}}
+
+\newcommand*{\av}[1]{\textsc{{#1}}}
+\newcommand*{\fn}[1]{\textsc{{#1}}}
+% \DeclareMathOperator{\for}{\mathbf{for}}
+\newcommand*{\ifor}{\mathrel{\textrm{for}}}
+\newcommand*{\iFor}{\mathrel{\textbf{for}}}
+\newcommand*{\where}{{\textbf{where}}}
+\newcommand*{\dd}{\mathbin{..}}
+\renewcommand*{\vec}[1]{{\mathbf{#1}}}
+\newcommand*{\blank}{{-}}
+\newcommand*{\emptySeq}{{\varepsilon}}
 
 
 %%% Document
@@ -61,6 +99,332 @@
 
 
 
+% Polynomial representations
+%% Coefficients
+%% Evaluations
+%% Lagrange interpolation
 
+% Multilinear polynomials
+
+% Evaluating multilinear polynomials
+
+% Probabilistic results
+
+
+\section{Algorithms and Notation}
+
+% Variable types and initialization, sets, lists [1 \dd n], [0 \dd n), etc.
+
+% Sequence types, empty sequence symbol, length, concatenation
+
+% Arrays -- fixed and variable size
+
+% Functions, nested functions, scope
+
+% Tuples, packing and unpacking, placeholders
+
+
+\section{Polynomials}
+
+Polynomials form a fundamental building block for verifiable computation protocols.  We recall some background.
+
+Let $\FF$ be a field.  Then a \defn{polynomial} $p$ in variables $x_1, \ldots, x_k$ is a formal sum of the form
+\[
+  p(x_1, \ldots, x_k) = \sum_{\alpha \in \NN^k} c_{\alpha} x^\alpha,
+\]
+where the \defn{coefficients} $c_\alpha \in \FF$ are nonzero for only finitely many $\alpha$.  The collection of such polynomials is denoted $\FF[x_1, \ldots, x_k]$.
+
+If $k = 1$ then $p$ is called a \defn{univariate} polynomial with \defn{degree} equal to the largest $d$ such that $c_{(d)}$ is nonzero, or $-\infty$ if $p$ is the zero polynomial with all coefficients equal to zero.
+
+If $k > 1$ then $p$ is called a \defn{$k$-variate} or \defn{multivariate} polynomial with \defn{total degree} equal to the largest $d$ such that $c_{\alpha}$ is nonzero for some tuple $\alpha$ whose components sum to $d$, or $-\infty$ if $p$ is the zero polynomial.
+
+The \defn{evaluation} of a polynomial $p$ at a point $a = (a_1, \ldots, a_k) \in \FF^k$ is the value $p(a) \in \FF$ obtained by substituting $a_i$ for each variable $x_i$ in the formal sum of $p$ and evaluating the resulting algebraic expression.  This is well-defined because $p$ has only finitely many nonzero coefficients.
+
+We will focus our attention on two classes of polynomials which are particularly useful in subsequent discussions, univariate polynomials as defined above, and \emph{multilinear} polynomials.
+
+\subsection{Univariate Polynomials}
+
+
+\subsection{Multilinear Polynomials}
+
+A polynomial $p \in R = \FF[x_1, \ldots, x_k]$ is called \defn{multilinear} if for each $j$, the polynomial has degree at most 1 as a polynomial in $x_j$.  The space $\ML(R)$ of multilinear polynomials in $R$ is a $2^k$-dimensional $\FF$-vector subspace of $R$ which is spanned by the square-free monomials $x^\alpha, \alpha \in \{0, 1\}^k$.  In particular, a canonical representation for a multilinear polynomial is the collection of its coefficients when (uniquely) written as a sum of square-free monomials.  This representation is called the \defn{monomial representation} of $p$, which we denote by $\fn{Monom}(p)$.
+
+We will give several algorithms for efficiently evaluating multilinear polynomials.  As a warm-up, we begin with the most straightforward algorithm, specialized to the monomial representation.  Shortly, we will extend our scope to a more general class of representations, which in particular will include the important \emph{Lagrange representation} as a special case.
+
+\begin{algorithm}
+  \caption{Evaluating a multilinear polynomial $p$ with monomial representation}
+  \begin{algorithmic}[1]
+    \Function{Eval}{$\vec{c} \gets \fn{Monom}(p)$, $\vec{r} : \FF^k$} $\to \FF$
+      \Let{$\av{acc} : \FF$}{$0$}
+      \For{$\alpha \in \{0, 1\}^k$}
+        \Let{\av{prod}}{$c_\alpha \cdot \prod_{i: \alpha_i = 1} r_i$}
+        \Let{\av{acc}}{$\av{acc} + \av{prod}$}
+      \EndFor
+      \State \Return{\av{acc}}
+    \EndFunction
+  \end{algorithmic}
+  \label{alg:ml-eval-monom}
+\end{algorithm}
+
+Algorithm \ref{alg:ml-eval-monom} simply evaluates each monomial of $p$ in sequence, and adds the result to an accumulator to collect the final sum.  In particular, some simple bookkeeping shows that the algorithm uses $k 2^{k-1}$ field multiplications and $2^k$ field additions, and so for a polynomial with $n= 2^k$ coefficients the algorithm runs in $O(n \log n)$ time and $O(1)$ space.  We omit the details until we present Algorithm \ref{alg:ml-eval-gen}, which specializes to the above for the monomial representation.
+
+We now introduce a general formulation for monomial bases of the multilinear polynomials $\ML(R)$.  We construct the general basis using pairs of linear polynomials $a + bx, c + dx$ where $ad - bc \neq 0$.  This condition is necessary and sufficient for the two polynomials to be linearly independent over $\FF$, which in particular allows us to represent the polynomials 1 and $x$ as a linear combination of the general terms:
+\[
+  \matr{a & b \\ c & d}^{-1} \matr{a + bx \\ c + dx}
+  = \matr{a & b \\ c & d}^{-1} \matr{a & b \\ c & d} \matr{1 \\ x}
+  % = \matr{1 & 0 \\ 0 & 1} \matr{1 \\ x}
+  = \matr{1 \\ x}.
+\]
+
+For each $i \in \{1, \ldots, k\}$, let $a_i, b_i, c_i, d_i \in \FF$ with $a_i d_i - b_i c_i \neq 0$, and for $\alpha \in \{0, 1\}^k$, define the basis polynomial $B_{\alpha}$ by
+\begin{equation}
+  \label{eq:ml-basis-polys}
+  B_\alpha(\vec{x}) \defeq \prod_{i=1}^k \big( (1 - \alpha_i) (a_i + b_i x_i) + \alpha_i (c_i + d_i x_i) \big).
+\end{equation}
+
+In other words, $B_{\alpha}$ is a product of univariate linear polynomials, one for each variable $x_i$, where a value of 0 for $\alpha_i$ selects the polynomial $a_i + b_i x_i$, and a value of 1 for $\alpha_i$ selects the polynomial $c_i + d_i x_i$.  We then have the following.
+
+\begin{theorem}
+  The collection of polynomials $\big(B_\alpha\big)_{\alpha \in \{0, 1\}^k}$ is an $\FF$-basis of the space of multilinear polynomials in $\FF[x_1, \ldots, x_k]$.
+\end{theorem}
+
+\begin{proof}
+  From the form of Equation \ref{eq:ml-basis-polys}, it is clear that each of the polynomials $B_\alpha$ is multilinear.  It is thus sufficient to represent an arbitrary square-free monomial $x^\beta$ as a linear combination of the polynomials $B_\alpha$.  For $j \in \{0, \ldots, k\}$ and $\alpha \in \{0, 1\}^j$, let
+  \[
+    B_\alpha^{(j)} \defeq \prod_{i=1}^j \big( (1 - \alpha_i) (a_i + b_i x_i) + \alpha_i (c_i + d_i x_i) \big) \prod_{i=j+1}^k x_i^{\beta_i}.
+  \]
+  We see that each polynomial $B_\alpha^{(k)}$ is just the basis polynomial $B_\alpha$, and that the single polynomial $B_{()}^{(0)}$ is the target monomial $x^\beta$.  We will show that for $1 \leq j \leq k$, the polynomials $B_\alpha^{(j-1)}$ can be expressed as a linear combination of the polynomials $B_\alpha^{(j)}$, from which the desired result follows.
+
+  As mentioned above, because $a_j d_j - b_j c_j \neq 0$, there are coefficients $u_j, v_j \in \FF$ such that $u_j (a_j x_j + b_j) + v_j (c_j x_j + d_j) = x^{\beta_j}$.  Then, writing $\alpha b$ for the concatenation of $\alpha$ with $b \in \{0, 1\}$, we can see that
+  \[
+    B_\alpha^{(j-1)} = u_j B_{\alpha 0}^{(j)} + v_j B_{\alpha 1}^{(j)}.
+  \]
+  This expression holds for arbitrary $\alpha \in \{0, 1\}^{j-1}$, so the result follows.
+\end{proof}
+
+As a consequence of the above, the collection of coefficients of a multilinear polynomial with respect to the basis polynomials $B_\alpha$ gives a unique representation for any valid choices of the coefficients $a_i, b_i, c_i, d_i$.  We write $\fn{Repr}(p, B)$ for the $B$-coefficient representation of a multilinear polynomial $p$.
+
+The general basis polynomials $B_\alpha$ include as a special case the standard monomial basis, by setting
+\[
+  \matr{a_i & b_i \\ c_i & d_i} = \matr{1 & 0 \\ 0 & 1} \quad \text{ for each $i$.}
+\]
+Another important representation which is a special case of the above general form is called the \defn{Lagrange representation}.  This representation describes a multilinear polynomial in terms of its \emph{evaluations} at a fixed structured collection of points.  The \defn{binary Lagrange basis polynomials} $L_\alpha^{(k)}$ are given by
+\[
+  L_\alpha^{(k)}(x_1, \ldots, x_k) \defeq \prod_{i=1}^k \big( (1 - \alpha_i) (1 - x_i) + \alpha_i x_i\big),
+\]
+which is a special case of the general basis polynomials, with
+\[
+  \matr{a_i & b_i \\ c_i & d_i} = \matr{1 & -1 \\ 0 & 1} \quad \text{ for each $i$.}
+\]
+
+The Lagrange basis polynomial $L_\alpha^{(k)}$ evaluates to $1$ at the point $\vec{x} = \alpha$, and evaluates to $0$ at the point $\vec{x} = \alpha'$ for each binary $\alpha' \neq \alpha$.  In particular, it follows that a multilinear polynomial $p = \sum_\beta c_{\beta} L_\beta^{(k)}$ evaluates to $c_\alpha$ for each binary input $\vec{x} = \alpha$.
+
+When the number of variables is clear, we will omit the superscript $(k)$ in this notation in favor of the more readable $L_\alpha$.  It is frequently convenient in algorithms to work with multilinear polynomials represented in terms of the binary Lagrange basis.  We write $\fn{Lagrange}(p)$ to represent the collection $\fn{Repr}(p, L)$ of coefficients representing a multilinear polynomial $p$ in this basis, called the (binary) \defn{Lagrange representation} of $p$.
+
+We now present several types of algorithms for evaluating multilinear polynomials, described in terms of the general basis polynomials $B_\alpha$.  First we will describe several approaches which allow evaluation of polynomials when the coefficients are \defn{streamed}, meaning that they may only be accessed one at a time, and in an order which is not controlled by the algorithm.  Next we will present an algorithm which gains better asymptotic performance at the cost of requiring more structured access to the polynomial coefficients.  Last, we will give several approaches which provide even better performance when evaluating a polynomial at a batch of points in a structured collection, saving in computation over naively evaluating the polynomial at each of the points individually.
+
+\subsubsection{Streaming Evaluation}
+
+We begin with an approach that directly generalizes Algorithm \ref{alg:ml-eval-monom} to multilinear polynomials represented in terms of a general basis.
+
+\begin{algorithm}
+  \caption{Evaluating a multilinear polynomial $p$ over general basis polynomials $B$}
+  \begin{algorithmic}[1]
+    \Function{Eval}{$\vec{c} \gets \fn{Repr}(p, B)$, $\vec{r} : \FF^k$} $\to \FF$
+      \Let{$\vec{s} : \FF^k$}{$(a_i + b_i r_i \ifor i \in [1 \dd k])$} \label{alg:ml-eval-gen:init1} \Comment{Evaluate $B$-basis product terms}
+      \Let{$\vec{t} : \FF^k$}{$(c_i + d_i r_i \ifor i \in [1 \dd k])$} \label{alg:ml-eval-gen:init2}
+      \Statex
+      \Let{$\av{acc} : \FF$}{$0$} \Comment{Main evaluation loop}
+      \For{$\alpha \in \{0, 1\}^k$}
+        \Let{\av{prod}}{$c_\alpha \cdot \prod_{i: \alpha_i = 0} s_i \cdot \prod_{i: \alpha_i = 1} t_i$} \label{alg:ml-eval-gen:prod}
+        \Let{\av{acc}}{$\av{acc} + \av{prod}$}
+      \EndFor
+      \State \Return{\av{acc}}
+    \EndFunction
+  \end{algorithmic}
+  \label{alg:ml-eval-gen}
+\end{algorithm}
+
+\begin{theorem}
+  Algorithm \ref{alg:ml-eval-gen} computes the evaluation of a $k$-variate multilinear polynomial, represented as $n = 2^k$ coefficients over a general basis $B$, and permits streaming input of these coefficients in arbitrary order.  The algorithm uses $O(n \log n)$ time and $O(\log n)$ space, and in particular requires $k \cdot 2^k + O(k)$ field multiplications and $2^k + O(k)$ field additions.
+\end{theorem}
+
+\begin{proof}
+  Correctness is clear since the algorithm simply accumulates the appropriate sum of the basis polynomials $B_\alpha$ to represent $p(\vec{r})$.  This sum does not depend on the order in which the indices $\alpha$ are visited because addition is commutative, so the coefficients may be streamed in arbitrary order.
+
+  A product of $j \geq 1$ field elements may be naively computed using $j-1$ field multiplications, so line \ref{alg:ml-eval-gen:prod} computes $\av{prod}$ using exactly $k$ multiplication operations per iteration of the loop, yielding $k \cdot 2^k$ multiplications in total.  The loop also requires one addition operation per iteration, giving $2^k$ additions in total.  Finally, $2k$ additions and multiplications are used by the initialization operations on lines \ref{alg:ml-eval-gen:init1} and \ref{alg:ml-eval-gen:init2}, yielding the desired totals.
+
+  The computation time is dominated by the $k \cdot 2^k = n \log n$ field multiplications, and the space usage is dominated by the $2k = 2 \log n$ field elements used to store the product terms of the basis polynomials $B_\alpha$.  This yields the desired time and space bounds.
+\end{proof}
+
+\begin{remark}
+  \label{remark:alg:ml-eval-gen}
+  Algorithm \ref{alg:ml-eval-gen} approximately doubles the number of multiplication operations needed when compared to Algorithm \ref{alg:ml-eval-monom}, which is specialized for the monomial basis, because each iteration of the main loop must take a product of $k+1$ terms in the first, as opposed to the only on average $k/2 + 1$ terms needed for the monomial basis.  This factor of 2 can be regained at the cost of some complexity with the following modifications:
+  \begin{itemize}
+    \item Precompute:
+    \begin{itemize}
+      \item An index set $I \gets [i : s_i \neq 0]$
+      \item An initial product term $p_0 \gets \prod_{i \in I} s_i \cdot \prod_{i \notin I} t_i$
+      \item Monomial terms $\vec{m} \gets (s_i^{-1} t_i : i \in I)$
+    \end{itemize}
+    \item Skip the main loop whenever $\alpha_i = 0$ for any $i \notin I$.
+    \item Compute \av{prod} as the product: $c_\alpha \cdot p_0 \cdot \prod_{i \in I : \alpha_i = 1} m_i$.
+  \end{itemize}
+  After implementing the above, the algorithm requires at most $(k+2) 2^{k-1} + 4k$ field multiplications and $k$ field inversions, which reduces the multiplicative order of magnitude to that of the simplified monomial algorithm.
+\end{remark}
+
+We will write $\fn{Int}(\alpha)$ for the integer $n = \sum_{i=1}^{k} \alpha_i 2^{i-1}$ corresponding to a binary tuple $\alpha \in \{0, 1\}^k$, and $\fn{Bin}_k(n)$ for the inverse operation.
+
+\begin{algorithm}
+  \caption{Evaluating a multilinear polynomial $p$ over general basis polynomials $B$, making a space-time tradeoff}
+  \begin{algorithmic}[1]
+    \Function{Eval}{$\vec{c} \gets \fn{Repr}(p, B)$, $\vec{r} : \FF^k$} $\to \FF$
+      \Let{$\vec{s} : \FF^k$}{$(a_i + b_i r_i \ifor i \in [1 \dd k])$} \Comment{Evaluate $B$-basis product terms}
+      \Let{$\vec{t} : \FF^k$}{$(c_i + d_i r_i \ifor i \in [1 \dd k])$}
+      \Statex
+      \Let{$\av{basis} : \fn{Array}_{2^k}(\FF)$}{$[1, \blank, \cdots, \blank]$} \Comment{Precompute $B$-basis polynomials at $\vec{r}$}
+      \For{$i \gets [1 \dd k]$} \label{alg:ml-eval-gen-space:precomp-loop}
+        \For{$j \gets [0 \dd 2^{i-1})$}
+          \Let{\av{prev}}{$\av{basis}[j]$}
+          \Let{$\av{basis}[j]$}{$s_j \cdot \av{prev}$}
+          \Let{$\av{basis}[j + 2^{i-1}]$}{$t_j \cdot \av{prev}$}
+        \EndFor
+      \EndFor
+      \Statex
+      \Let{$\av{acc} : \FF$}{$0$} \Comment{Main evaluation loop}
+      \For{$\alpha \in \{0, 1\}^k$}
+        % \Let{\av{idx}}{$\av{Int}(\alpha)$}
+        \Let{\av{prod}}{$c_\alpha \cdot \av{basis}[\av{Int}(\alpha)]$}
+        \Let{\av{acc}}{$\av{acc} + \av{prod}$}
+      \EndFor
+      \State \Return{\av{acc}}
+    \EndFunction
+  \end{algorithmic}
+  \label{alg:ml-eval-gen-space}
+\end{algorithm}
+
+\begin{theorem}
+  Algorithm \ref{alg:ml-eval-gen-space} computes the evaluation of a $k$-variate multilinear polynomial, represented as $n = 2^k$ coefficients over a general basis $B$, and permits streaming input of these coefficients in arbitrary order.  The algorithm uses $O(n)$ time and $O(n)$ space, and in particular requires $3 \cdot 2^k + O(k)$ field multiplications, $2^k + O(k)$ field additions, and $2^k + O(k)$ field elements of memory.
+\end{theorem}
+
+\begin{proof}
+  Algorithm \ref{alg:ml-eval-gen-space} works exactly like Algorithm \ref{alg:ml-eval-gen} except that it precomputes and stores in memory the evaluations of the $B$-basis polynomials at input $\vec{r}$.  The main evaluation loop again is a simple sum taken over the indices $\alpha$, so the polynomial coefficients may be streamed in arbitrary order.
+
+  Correctness of the algorithm thus follows once we argue that: after running the loop starting on Line \ref{alg:ml-eval-gen-space:precomp-loop}, the array $\av{basis}$ holds the product $\prod_{i : \alpha_i = 0} s_i \cdot \prod_{i : \alpha_i = 1} t_i$ at index $\fn{Int}(\alpha)$ for each $\alpha \in \{0, 1\}^k$.  To this end, let $B^{(i)}$ be the $i$-variate multilinear basis consisting of the $2^i$ choices of products of the $B$-basis product terms for $x_1, \ldots, x_i$.  Then $B^{(i-1)}_\alpha$ may be used to construct $B^{(i)}_{\alpha 0}$ and $B^{(i)}_{\alpha 1}$ by
+  \begin{align*}
+    B^{(i)}_{\alpha 0} &= (a_i + b_i x_i) B^{(i-1)}_\alpha, \\
+    B^{(i)}_{\alpha 1} &= (c_i + d_i x_i) B^{(i-1)}_\alpha.
+  \end{align*}
+
+  In particular, iteration $i$ of the loop computes the entries of $B^{(i)}$ evaluated at $(r_1, \ldots, r_i)$ using the entries of $B^{(i-1)}$ evaluated at $(r_1, \ldots, r_{i-1})$.  Thus at the end of the loop, all of the terms of the basis $B = B^{(k)}$ have been computed.
+
+  For a tally of arithmetic operations, the initialization of $\vec{s}$ and $\vec{t}$ requires $2k$ field additions and multiplications, and the main evaluation loop requires $2^k$ field additions and multiplications.  The loop to precompute the $B$-basis polynomials executes the inner loop $2^{i-1}$ times for each $i = 1, \ldots, k$, for a total of $2^k - 1$ repetitions, giving $2 \cdot 2^k - 2$ field multiplications.  This gives $3 \cdot 2^k + 2k - 2 = 3 \cdot 2^k + O(k)$ field multiplications and $2^k + 2k = 2^k + O(k)$ field additions in total, as required.
+
+  The space used by the algorithm is dominated by the \av{basis} array, which uses $2^k$ field elements.  An additional $2k + O(1)$ field elements of space are required to store $\vec{s}, \vec{t}$ and other incidental variables, giving the desired $O(k)$ error bound.
+
+  The $O(n)$ time and space bounds follow immediately from the above.
+\end{proof}
+
+\begin{remark}
+  As was the case for Algorithm \ref{alg:ml-eval-gen}, the implementation of Algorithm \ref{alg:ml-eval-gen-space} may be modified to reduce the number of multiplication operations needed to compute the $B$-basis polynomials by about half, at the cost of some additional bookkeeping to keep track of zero product terms.  (See Remark \ref{remark:alg:ml-eval-gen}.)  This reduces the number of required field multiplications to $2 \cdot 2^k + O(k)$.
+
+  As an additional observation, notice that the approaches of Algorithms \ref{alg:ml-eval-gen} and \ref{alg:ml-eval-gen-space} may be combined to produce an algorithm with characteristics somewhere between the two.  Specifically, a new algorithm $\fn{Eval}_j$ may execute the precomputation loop of Algorithm \ref{alg:ml-eval-gen-space} only up to iteration $j < k$, and then compute the remaining product terms of the $B$-basis polynomials for indices $j+1, \ldots, k$ on the fly during the main evaluation loop.  This results in a space requirement of $2^j + O(k)$ and a time requirement of $(k-j) 2^k + O(2^j)$.
+
+  Setting $j$ dynamically based on the value of $k$ can in fact produce algorithm variants with distinct asymptotic performance.  For instance, letting $j = k/2$ makes use of $O(\sqrt{n})$ space to gain a speed-up of a factor of around 2 compared to Algorithm \ref{alg:ml-eval-gen}.  Letting $j = k - \log k$ results in asymptotic runtime of $O( n \log \log n )$ and asymptotic space usage of $O( n / \log n )$.
+\end{remark}
+
+
+\subsubsection{Non-streaming Evaluation}
+
+In the following we introduce an algorithm which evaluates a multilinear polynomial with better performance than achieved by any of the previous approaches.  This is accomplished by abandoning the requirement that the coefficients of the polynomial are streamable, requiring instead that they are accessible in a prescribed traversal order.  Note that random access to the polynomial coefficients is sufficient for this purpose.
+
+Algorithm \ref{alg:ml-eval-gen-recurse} traverses the indices $\alpha \in \{0, 1\}^k$ in lexicographic order using a recursive construction, building up the corresponding $B$-basis polynomial evaluations term by term throughout the traversal.  This has the effect of both minimizing the number of field multiplications needed for evaluation, and using only logarithmic stack space for the recursive calls.
+
+\begin{algorithm}
+  \caption{Evaluating a multilinear polynomial $p$ over general basis polynomials $B$ using recursive traversal of the index space}
+  \begin{algorithmic}[1]
+    \Require{Coefficients $c_\alpha$ allow sequential access in lexicographic order by index}
+    \Statex
+    \Function{Eval}{$\vec{c} \gets \av{Repr}(p, B)$, $\vec{r} : \FF^k$} $\to \FF$
+      \Let{$\vec{s} : \FF^k$}{$(a_i + b_i r_i \ifor i \in [1 \dd k])$} \Comment{Evaluate $B$-basis product terms}
+      \Let{$\vec{t} : \FF^k$}{$(c_i + d_i r_i \ifor i \in [1 \dd k])$}
+      \Statex
+      \Function{PrefixEval}{$\alpha : \{0, 1\}^*$} $\to \FF$ \Comment{Find sum of partial terms for prefix $\alpha$}
+        \Let{$i$}{$\fn{Len}(\alpha)$}
+        \If{$i = k$}
+          \State \Return{$c_\alpha$}
+        \Else
+          \State \Return{$s_{i+1} \cdot \fn{PrefixEval}(\alpha 0) + t_{i+1} \cdot \fn{PrefixEval}(\alpha 1)$}
+        \EndIf
+      \EndFunction
+      \Statex
+      \Let{$\alpha : \{0, 1\}^*$}{$\varepsilon$} \label{alg:ml-eval-gen-recurse:return1} \Comment{Main recursive call}
+      \State \Return{\fn{PrefixEval}($\alpha$)} \label{alg:ml-eval-gen-recurse:return2}
+    \EndFunction
+  \end{algorithmic}
+  \label{alg:ml-eval-gen-recurse}
+\end{algorithm}
+
+\begin{theorem}
+  Algorithm \ref{alg:ml-eval-gen-recurse} computes the evaluation of a $k$-variate multilinear polynomial, represented as $n = 2^k$ coefficients over a general basis $B$.  The algorithm uses $O(n)$ time and $O(\log n)$ space, and in particular requires $2 \cdot 2^k + O(k)$ field multiplications and $2^k + O(k)$ field additions.
+\end{theorem}
+
+\begin{proof}
+  For $\alpha \in \{0, 1\}^*$ of length $i \leq k$, we argue by induction on $i$ that $\fn{PrefixEval}(\alpha)$ computes the sum
+  \begin{equation}
+    \label{eq:alg:ml-eval-gen-recurse:rec-sum}
+    \sum_{\alpha' = \alpha \beta \in \{0, 1\}^k} c_{\alpha'} \prod_{j=i+1}^k \big( (1 - \alpha'_j) s_j + \alpha'_j t_j \big).
+  \end{equation}
+  For $i = k$, this is clear because \fn{PrefixEval} returns $c_\alpha$, which is equal to the desired sum.  If $i < k$ and the expression is assumed valid for prefixes of length $i + 1$, then we see that $\fn{PrefixEval}(\alpha)$ is given by
+  \[
+    s_{i+1} \sum_{\alpha' = \alpha 0 \beta} c_{\alpha'} \prod_{j=i+2}^k \big( (1 - \alpha'_j) s_j + \alpha'_j t_j \big) +
+    t_{i+1} \sum_{\alpha' = \alpha 1 \beta} c_{\alpha'} \prod_{j=i+2}^k \big( (1 - \alpha'_j) s_j + \alpha'_j t_j \big),
+  \]
+  which can be simplified to Equation \ref{eq:alg:ml-eval-gen-recurse:rec-sum}.  When $\alpha$ is the empty sequence, this expression is equal to $p(\vec{r})$ evaluated in terms of the $B$-basis polynomials, so Lines \ref{alg:ml-eval-gen-recurse:return1} and \ref{alg:ml-eval-gen-recurse:return2} produce the desired result.
+
+  Each recursive call to \fn{PrefixEval} increases the length of the prefix $\alpha$ by 1, so since the function makes two recursive calls and terminates at length $k$, the outer call to $\fn{PrefixEval}(\emptySeq)$ results in $2^{k+1} - 1$ calls in total, of which $2^k$ satisfy $\fn{Len}(\alpha) = k$ and execute the base case, and $2^k - 1$ execute the recursive case.  Each recursive case requires two field multiplications and one field addition, so the total needed for the call to \fn{PrefixEval} is $2 \cdot 2^k - 2$ multiplications and $2^k - 1$ additions.  The preprocessing of the product terms $\vec{s}$ and $\vec{t}$ additionally requires $2k$ multiplications and additions, yielding a final count of $2 \cdot 2^k + 2k - 2 = 2 \cdot 2^k + O(k)$ multiplications and $2^k + 2k - 1 = 2^k + O(k)$ additions.
+
+  The desired $O(n)$ time bound follows from the counts of arithmetic operations.  For space usage, note that the recursive calls to \fn{PrefixEval} go to depth at most $k+1$, so the space usage (e.g.\ on the stack) of these recursive calls is a constant times the maximum depth.  Together with the $2k$ field elements of space used to store $\vec{s}$ and $\vec{t}$, this yields the desired space bound of $O(k) = O(\log n)$.
+
+  To see that the algorithm uses the polynomial coefficients sequentially in lexicographic order by index, note that the recursive calls to \fn{PrefixEval} append 0 to the prefix before appending 1.  This means that if two indices $\alpha$ and $\alpha'$ differ first at index $j$, with $\alpha_j = 0$ and $\alpha'_j = 1$, then $c_\alpha$ is visited in the recursive call to $\fn{PrefixEval}(\alpha_1 \cdots \alpha_{j-1} 0)$, while $c_{\alpha'}$ is visited after this in the recursive call $\fn{PrefixEval}(\alpha_1 \cdots \alpha_{j-1} 1)$.
+\end{proof}
+
+\begin{remark}
+  Similarly to previous algorithms in this section, an approach like that outlined in Remark \ref{remark:alg:ml-eval-gen} allows Algorithm \ref{alg:ml-eval-gen-recurse} to be modified to use only one multiplication operation per recursive call to \fn{PrefixEval}.  This reduces the number of field multiplications to $2^k + O(k)$.
+
+  The traversal order used by Algorithm \ref{alg:ml-eval-gen-recurse} to produce the basis polynomial evaluations is not sacrosanct.  An alternate approach would be to traverse the indices in the order of a \emph{Gray Code}, which enumerates the length $k$ binary strings in such a way that each is obtained from the last by inverting a single bit.  This approach thus has the potential advantage of only writing to a constant number of variables during the main loop, but also adds some additional complexity to the implementation.
+\end{remark}
+
+
+\subsubsection{Batch Evaluation Algorithms}
+
+
+
+
+%%%%% SCRATCH %%%%%
+
+% Multilinear polynomials may be represented by a different collection of coefficients giving their \emph{evaluations} at a fixed structured collection of points.  Such a representation is called a \defn{Lagrange representation} of a polynomial.  Specifically, we define the \defn{binary Lagrange basis polynomials} $L_\alpha^{(k)}$ by
+% \[
+%   L_\alpha^{(k)}(x_1, \ldots, x_k) \defeq \prod_{i=1}^k \big(\alpha_i x_i + (1 - \alpha_i) (1 - x_i) \big)
+% \]
+% The polynomial $L_\alpha^{(k)}$ evaluates to $1$ on input $\vec{x} = \alpha$, and evaluates to $0$ on input $\vec{x} = \alpha'$ for any binary input $\alpha' \neq \alpha$.
+
+% \begin{theorem}
+%   The binary Lagrange basis polynomials $(L_\alpha^{(k)})_{\alpha \in \{0, 1\}^k}$ form an $\FF$-vector space basis for the collection of $k$-variate multilinear polynomials over $\FF$.
+% \end{theorem}
+
+% \begin{proof}
+%   Each Lagrange polynomial $L_\alpha^{(k)}$ is represented as a product of $k$ linear terms, each in just one of the $k$ variables.  This means that each polynomial can be represented as a linear combination of square-free monomials, and thus is multilinear.
+
+%   The space of $k$-variate multilinear polynomials has dimension $2^k$ because the square-free monomials form a basis.  Thus to show that the $2^k$ Lagrange polynomials form a basis, it is sufficient to show that they are linearly independent over $\FF$.  Suppose that the zero polynomial is represented as a linear combination for some coefficients $c_\alpha$:
+%   \[
+%     p(\vec{x}) \defeq \sum_{\alpha \in \{0, 1\}^k} c_\alpha L_\alpha^{(k)}(\vec{x}) = 0.
+%   \]
+%   In particular, for each binary vector $\alpha$, only the Lagrange polynomial $L_\alpha^{(k)}$ is nonzero.  This implies that $p(\alpha) = c_\alpha = 0$, so we conclude that $p$ was in fact the trivial linear combination, and that the Lagrange polynomials are independent over $\FF$.
+% \end{proof}
+
+%%%%%%%%%%%%%%%%%%%%%%%
+
+% In the following we let $\av{grayIdx}(i)$, $i \geq 1$ denote the index of the bit flip which transforms the gray code of $i-1$ to the gray code of $i$, which is equal to the least significant nonzero bit of $i$ when represented in standard binary.
 
 \end{document}
